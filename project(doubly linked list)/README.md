@@ -1,43 +1,140 @@
-題目名稱：圖書館借閱系統
-題目描述：
-你正在設計一個圖書館借閱系統。在這個系統中，每本書都有一個唯一的書籍ID、書名和作者。為了方便管理，我們需要維護兩種類型的鏈結串列：
- * 「已借閱書籍」清單： 這是一個雙向環狀鏈結串列，用來追蹤目前所有被借閱的書籍。每一本書被借閱後，會被新增到這個清單中。當書被歸還時，會從這個清單中移除。這個清單需要能夠快速地在借閱書籍中向前和向後瀏覽。
- * 「熱門書籍」清單： 這是一個雙向非環狀鏈結串列，用來記錄圖書館中近期最熱門的書籍。當一本書被借閱的次數達到一定閾值（例如：5次）時，它會被添加到這個清單的尾部。這個清單的容量是有限的（例如：最多10本書）。如果超過容量，最舊的熱門書籍（即清單頭部的書籍）會被移除。
-請你使用 C 語言實現這個系統，並提供以下功能：
-資料結構定義：
-請定義一個結構體 Book，包含書籍ID (整數)、書名 (字串) 和作者 (字串)。
-typedef struct Book {
-    int bookID;
-    char title[100];
-    char author[100];
-    // ... 其他可能需要的字段，例如：借閱次數
-} Book;
+以下內容已以 **Markdown** 撰寫，直接複製貼上到 `README.md` 即可在 GitHub 上呈現。若需英文化或再調整排版，可再告訴我！
 
-並定義鏈結串列節點的結構體，包含 Book 結構體和前後指標。
-函數要求：
- * Node* createBookNode(int bookID, const char* title, const char* author);
-   * 功能：創建一個新的書籍節點。
- * void borrowBook(Node** borrowedListHead, Book* newBook);
-   * 功能：將一本新借閱的書籍添加到「已借閱書籍」清單（雙向環狀鏈結串列）中。
-   * 請注意環狀鏈結串列的頭節點維護。
- * void returnBook(Node** borrowedListHead, int bookID);
-   * 功能：從「已借閱書籍」清單中移除一本已歸還的書籍。
-   * 請處理各種情況，例如：清單為空，書籍不在清單中等。
- * void displayBorrowedBooks(Node* borrowedListHead);
-   * 功能：遍歷並顯示「已借閱書籍」清單中所有書籍的資訊。
-   * 需要演示環狀遍歷的特性，例如：可以從任意節點開始遍歷一圈。
- * void updateHotBooks(Node** hotListHead, Book* borrowedBook, int hotListCapacity);
-   * 功能：根據借閱次數更新「熱門書籍」清單（雙向非環狀鏈結串列）。
-   * 如果 borrowedBook 的借閱次數達到閾值，將其添加到「熱門書籍」清單的尾部。
-   * 如果清單超出容量，移除頭部的書籍。
- * void displayHotBooks(Node* hotListHead);
-   * 功能：遍歷並顯示「熱門書籍」清單中所有書籍的資訊。
-主函數（main 函數）要求：
- * 初始化兩個鏈結串列為空。
- * 創建一些書籍資料，模擬書籍的借閱和歸還操作。
- * 調用上述函數來演示系統的運作，包括：
-   * 借閱多本書。
-   * 歸還部分書。
-   * 顯示已借閱書籍清單。
-   * 模擬多次借閱同一本書，使其成為熱門書籍。
-   * 更新並顯示熱門書籍清單，演示容量限制。
+---
+
+# 📚 圖書館借閱管理系統 (C)
+
+> 一個以 **雙向環狀串列 (Borrowed List)** ＋ **雙向線性串列 (Hot List)** 為核心的 CLI 圖書館管理範例，示範在 C 語言中如何安全、低耦合地操作動態資料結構，並維護熱門書籍排行榜。
+
+---
+
+## 目錄
+
+* [專案特色](#專案特色)
+* [功能總覽](#功能總覽)
+* [程式架構](#程式架構)
+* [建置與執行](#建置與執行)
+* [操作教學](#操作教學)
+* [檔案結構](#檔案結構)
+---
+
+## 專案特色
+
+| # | 亮點          | 說明                                    |
+| - | ----------- | ------------------------------------- |
+| 1 | **雙向環狀串列**  | 借閱書籍清單以環狀結構實作，可 O(1) 由尾端回到頭端，易於巡覽與插刪。 |
+| 2 | **熱門書籍排行**  | 以借閱次數門檻與容量上限維護“Hot List”，展示資料結構間的互動。  |
+| 3 | **最小記憶體佔用** | 只做必要 `malloc/free`，避免記憶體流失。           |
+| 4 | **完整防呆**    | 包含串列空、單節點、ID 不存在等例外處理。                |
+| 5 | **易於擴充**    | 模組化函式介面，可快速嵌入檔案 I/O、資料庫或網路層。          |
+
+---
+
+## 功能總覽
+
+| 代號 | 功能              | 主要 API                 |
+| -- | --------------- | ---------------------- |
+| 1  | 顯示已借閱書籍清單       | `displayBorrowedBooks` |
+| 2  | 顯示熱門書籍清單        | `displayHotBooks`      |
+| 3  | 借閱書籍（新增 / 次數累計） | `borrowBook`           |
+| 4  | 歸還書籍（移除）        | `returnBook`           |
+| 5  | 更新熱門書籍清單        | `updateHotBooks`       |
+| 6  | 結束並釋放所有資源       | `cleanList`            |
+
+---
+
+## 程式架構
+
+```mermaid
+flowchart LR
+  subgraph Borrowed List (circular)
+    B1["Node\n(id, bookname, author, time)"] -- next / prev --> B2["..."]
+    B2 --> B3["..."]
+    B3 -- 回到頭 --> B1
+  end
+
+  subgraph Hot List (linear)
+    H1["Node\n(id, bookname, author)"] -- next --> H2["..."] --> H3["..."]
+  end
+```
+
+* **`Node`**
+
+  ```c
+  typedef struct Node {
+      int   id;
+      char  bookname[MAX];
+      char  author[MAX];
+      int   time;        // 借閱次數
+      struct Node *next;
+      struct Node *prev;
+  } Node;
+  ```
+
+* **`DoubleLinkedList`**
+
+  ```c
+  typedef struct {
+      Node *head;
+      Node *tail;
+      int   size;
+  } DoubleLinkedList;
+  ```
+
+---
+
+## 建置與執行
+
+> 測試環境：`gcc 13.2`、`clang 18`、`Windows/Linux/macOS` 皆可
+
+```bash
+# 1. 取得原始碼
+git clone https://github.com/leeminwei/C_programming_project
+cd project(doubly linked list)
+
+# 2. 編譯
+gcc -Wall -Wextra -pedantic -std=c17 -o main main.c
+
+# 3. 執行
+./main
+```
+
+> 如使用 `clang` 或需導出至 IDE（VSCode / CLion），僅需將 `main.c` 納入專案並指定 C17 標準。
+
+---
+
+## 操作教學
+
+```
+====== 圖書館管理系統 ======
+1. 顯示已借閱書籍清單
+2. 顯示熱門書籍清單
+3. 添加已借閱書籍
+4. 刪除已借閱書籍
+5. 更新熱門書籍清單
+6. 結束程式並清理環境
+請輸入選項：
+```
+
+> * **借閱書籍** 完整流程
+>
+>   1. 輸入 **ID** → 若該書已存在，直接累計 `time`
+>   2. 否則輸入書名、作者，系統自動插入至尾端
+> * **歸還書籍**
+>
+>   * 支援刪首節點、尾節點、中間節點以及單節點情況
+> * **更新熱門書籍清單**
+>
+>   * 內建門檻 `hotListCapacity = 2`（可於 `main` 修改）
+>   * 若 Hot List 已滿，刪除最舊資料（頭節點）
+
+---
+
+## 檔案結構
+
+```text
+.
+├── main.c           # 主程式：所有核心結構與功能
+└── README.md        # 專案說明（本檔）
+```
+
