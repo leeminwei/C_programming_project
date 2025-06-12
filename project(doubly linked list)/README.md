@@ -47,15 +47,16 @@
 
 ```mermaid
 flowchart LR
-  subgraph Borrowed List (circular)
-    B1["Node\n(id, bookname, author, time)"] -- next / prev --> B2["..."]
-    B2 --> B3["..."]
+  subgraph "Borrowed List – Circular"
+    B1[Node<br/>(id, bookname, author, time)] -- next/prev --> B2[Node]
+    B2 --> B3[Node]
     B3 -- 回到頭 --> B1
   end
 
-  subgraph Hot List (linear)
-    H1["Node\n(id, bookname, author)"] -- next --> H2["..."] --> H3["..."]
+  subgraph "Hot List – Linear"
+    H1[Node<br/>(id, bookname, author)] --> H2[Node] --> H3[Node]
   end
+
 ```
 
 * **`Node`**
