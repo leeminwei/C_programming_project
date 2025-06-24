@@ -88,10 +88,10 @@ listnode* add_student(listnode* head, int *count, int max_students) {
     return head;
 }
 
-listnode* delete_student(listnode* head, int *count) {
-    if (head == NULL) {
+void delete_student(listnode** head, int *count) {
+    if (*head == NULL) {
         puts("目前沒有學生資料。");
-        return NULL;
+        return;
     }
     int id;
     printf("請輸入要刪除的學生id : \n");
@@ -99,12 +99,12 @@ listnode* delete_student(listnode* head, int *count) {
     while (getchar() != '\n'); 
     //found用來記錄要被刪除的學生是誰
     int found = -1;
-    listnode* cur = head;
+    listnode* cur = *head;
     if(cur->id == id) {
         cur = cur->next;
         found = id;
-        head = cur;
-        return head;
+        *head = (*head)->next;
+        return;
     }
     while (cur->next != NULL) {
         if (cur->next->id == id) {
@@ -118,11 +118,11 @@ listnode* delete_student(listnode* head, int *count) {
     }
     if (found == -1) {
         printf("找不到該學生，無法刪除。\n");
-        return head;
+        return;
     }
     (*count)--;
     printf("已成功刪除");
-    return head;
+    return;
 }
 
 
@@ -206,7 +206,7 @@ int main() {
         }
         
         else if (choice == 3) {
-            head = delete_student(head, &max_students);
+            delete_student(&head, &max_students);
         }
         else if (choice == 4) {
             update_student(head, max_students);
