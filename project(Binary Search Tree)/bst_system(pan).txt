@@ -1,0 +1,488 @@
+#include "bst.h"
+
+// ==================== 基本操作函數 ====================
+
+BST* createBST(void) {
+    BST* bst = (BST*)malloc(sizeof(BST));
+    if (bst == NULL) {
+        printf("記憶體分配失敗！\n");
+        return NULL;
+    }
+    bst->root = NULL;
+    bst->size = 0;
+    return bst;
+}
+
+TreeNode* createNode(int data) {
+    TreeNode* newNode = (TreeNode*)malloc(sizeof(TreeNode));
+    if (newNode == NULL) {
+        printf("記憶體分配失敗！\n");
+        return NULL;
+    }
+    newNode->data = data;
+    newNode->left = NULL;
+    newNode->right = NULL;
+    return newNode;
+}
+
+TreeNode* insertNode(TreeNode* root, int data, bool* success) {
+    if (root == NULL) {
+        *success = true;
+        return createNode(data);
+    }
+    
+    if (data < root->data) {
+        root->left = insertNode(root->left, data, success);
+    } else if (data > root->data) {
+        root->right = insertNode(root->right, data, success);
+    } else {
+        *success = false; // 重複值
+    }
+    
+    return root;
+}
+
+bool insert(BST* bst, int data) {
+    if (bst == NULL) return false;
+    
+    bool success = false;
+    bst->root = insertNode(bst->root, data, &success);
+    
+    if (success) {
+        bst->size++;
+        printf("成功插入節點 %d\n", data);
+    } else {
+        printf("值 %d 已存在，無法插入\n", data);
+    }
+    
+    return success;
+}
+
+TreeNode* findMinNode(TreeNode* root) {
+    if (root == NULL) return NULL;
+    while (root->left != NULL) {
+        root = root->left;
+    }
+    return root;
+}
+
+TreeNode* findMaxNode(TreeNode* root) {
+    if (root == NULL) return NULL;
+    while (root->right != NULL) {
+        root = root->right;
+    }
+    return root;
+}
+
+TreeNode* deleteNode(TreeNode* root, int data, bool* success) {
+    if (root == NULL) {
+        *success = false;
+        return NULL;
+    }
+    
+    if (data < root->data) {
+        root->left = deleteNode(root->left, data, success);
+    } else if (data > root->data) {
+        root->right = deleteNode(root->right, data, success);
+    } else {
+        *success = true;
+        
+        // 案例1: 沒有子節點
+        if (root->left == NULL && root->right == NULL) {
+            free(root);
+            return NULL;
+        }
+        // 案例2: 只有右子節點
+        else if (root->left == NULL) {
+            TreeNode* temp = root->right;
+            free(root);
+            return temp;
+        }
+        // 案例3: 只有左子節點
+        else if (root->right == NULL) {
+            TreeNode* temp = root->left;
+            free(root);
+            return temp;
+        }
+        // 案例4: 有兩個子節點
+        else {
+            TreeNode* successor = findMinNode(root->right);
+            root->data = successor->data;
+            root->right = deleteNode(root->right, successor->data, success);
+        }
+    }
+    
+    return root;
+}
+
+bool deleteBST(BST* bst, int data) {
+    if (bst == NULL || bst->root == NULL) {
+        printf("樹為空，無法刪除\n");
+        return false;
+    }
+    
+    bool success = false;
+    bst->root = deleteNode(bst->root, data, &success);
+    
+    if (success) {
+        bst->size--;
+        printf("成功刪除節點 %d\n", data);
+    } else {
+        printf("節點 %d 不存在，無法刪除\n", data);
+    }
+    
+    return success;
+}
+
+int findMin(BST* bst) {
+    if (bst == NULL || bst->root == NULL) {
+        printf("樹為空\n");
+        return INT_MIN;
+    }
+    
+    TreeNode* minNode = findMinNode(bst->root);
+    return minNode->data;
+}
+
+int findMax(BST* bst) {
+    if (bst == NULL || bst->root == NULL) {
+        printf("樹為空\n");
+        return INT_MAX;
+    }
+    
+    TreeNode* maxNode = findMaxNode(bst->root);
+    return maxNode->data;
+}
+
+// ==================== 遍歷函數 ====================
+
+void inorderTraversal(TreeNode* root) {
+    if (root != NULL) {
+        inorderTraversal(root->left);
+        printf("%d ", root->data);
+        inorderTraversal(root->right);
+    }
+}
+
+void preorderTraversal(TreeNode* root) {
+    if (root != NULL) {
+        printf("%d ", root->data);
+        preorderTraversal(root->left);
+        preorderTraversal(root->right);
+    }
+}
+
+void postorderTraversal(TreeNode* root) {
+    if (root != NULL) {
+        postorderTraversal(root->left);
+        postorderTraversal(root->right);
+        printf("%d ", root->data);
+    }
+}
+
+// ==================== 佇列操作函數 ====================
+
+Queue* createQueue(void) {
+    Queue* queue = (Queue*)malloc(sizeof(Queue));
+    if (queue == NULL) return NULL;
+    queue->front = NULL;
+    queue->rear = NULL;
+    return queue;
+}
+
+void enqueue(Queue* queue, TreeNode* treeNode) {
+    if (queue == NULL || treeNode == NULL) return;
+    
+    QueueNode* newQueueNode = (QueueNode*)malloc(sizeof(QueueNode));
+    if (newQueueNode == NULL) return;
+    
+    newQueueNode->treeNode = treeNode;
+    newQueueNode->next = NULL;
+    
+    if (queue->rear == NULL) {
+        queue->front = queue->rear = newQueueNode;
+    } else {
+        queue->rear->next = newQueueNode;
+        queue->rear = newQueueNode;
+    }
+}
+
+TreeNode* dequeue(Queue* queue) {
+    if (queue == NULL || queue->front == NULL) return NULL;
+    
+    QueueNode* temp = queue->front;
+    TreeNode* treeNode = temp->treeNode;
+    
+    queue->front = queue->front->next;
+    if (queue->front == NULL) {
+        queue->rear = NULL;
+    }
+    
+    free(temp);
+    return treeNode;
+}
+
+bool isQueueEmpty(Queue* queue) {
+    return (queue == NULL || queue->front == NULL);
+}
+
+void freeQueue(Queue* queue) {
+    if (queue == NULL) return;
+    
+    while (!isQueueEmpty(queue)) {
+        dequeue(queue);
+    }
+    free(queue);
+}
+
+void levelOrderTraversal(TreeNode* root) {
+    if (root == NULL) return;
+    
+    Queue* queue = createQueue();
+    if (queue == NULL) return;
+    
+    enqueue(queue, root);
+    
+    while (!isQueueEmpty(queue)) {
+        TreeNode* current = dequeue(queue);
+        printf("%d ", current->data);
+        
+        if (current->left != NULL) {
+            enqueue(queue, current->left);
+        }
+        if (current->right != NULL) {
+            enqueue(queue, current->right);
+        }
+    }
+    
+    freeQueue(queue);
+}
+
+// ==================== 進階功能函數 ====================
+
+int calculateHeight(TreeNode* root) {
+    if (root == NULL) return -1;
+    
+    int leftHeight = calculateHeight(root->left);
+    int rightHeight = calculateHeight(root->right);
+    
+    return 1 + (leftHeight > rightHeight ? leftHeight : rightHeight);
+}
+
+bool isValidBSTHelper(TreeNode* root, int minVal, int maxVal) {
+    if (root == NULL) return true;
+    
+    if (root->data <= minVal || root->data >= maxVal) {
+        return false;
+    }
+    
+    return isValidBSTHelper(root->left, minVal, root->data) &&
+           isValidBSTHelper(root->right, root->data, maxVal);
+}
+
+bool isValidBST(TreeNode* root) {
+    return isValidBSTHelper(root, INT_MIN, INT_MAX);
+}
+
+void displayTree(TreeNode* root, int level) {
+    if (root == NULL) return;
+    
+    displayTree(root->right, level + 1);
+    
+    for (int i = 0; i < level; i++) {
+        printf("    ");
+    }
+    printf("%d\n", root->data);
+    
+    displayTree(root->left, level + 1);
+}
+
+void freeTree(TreeNode* root) {
+    if (root != NULL) {
+        freeTree(root->left);
+        freeTree(root->right);
+        free(root);
+    }
+}
+
+void clearTree(BST* bst) {
+    if (bst == NULL) return;
+    
+    freeTree(bst->root);
+    bst->root = NULL;
+    bst->size = 0;
+    printf("樹已清空\n");
+}
+
+// ==================== 使用者介面函數 ====================
+
+void displayMenu(void) {
+    printf("\n=== 二元搜尋樹系統 ===\n");
+    printf("1.  插入節點\n");
+    printf("2.  刪除節點\n");
+    printf("3.  搜尋最小值\n");
+    printf("4.  搜尋最大值\n");
+    printf("5.  中序遍歷\n");
+    printf("6.  前序遍歷\n");
+    printf("7.  後序遍歷\n");
+    printf("8.  層序遍歷\n");
+    printf("9.  計算樹的高度\n");
+    printf("10. 檢查BST有效性\n");
+    printf("11. 顯示樹的結構\n");
+    printf("12. 清空樹\n");
+    printf("0.  結束程式\n");
+    printf("請選擇操作：");
+}
+
+void clearInputBuffer(void) {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
+int getIntInput(void) {
+    int value;
+    while (scanf("%d", &value) != 1) {
+        printf("輸入錯誤，請輸入整數：");
+        clearInputBuffer();
+    }
+    clearInputBuffer();
+    return value;
+}
+
+void handleUserInput(BST* bst) {
+    int choice, value, result;
+    
+    while (1) {
+        displayMenu();
+        choice = getIntInput();
+        
+        switch (choice) {
+            case 1:
+                printf("請輸入要插入的值：");
+                value = getIntInput();
+                insert(bst, value);
+                break;
+                
+            case 2:
+                if (bst->root == NULL) {
+                    printf("樹為空\n");
+                } else {
+                    printf("請輸入要刪除的值：");
+                    value = getIntInput();
+                    deleteBST(bst, value);
+                }
+                break;
+                
+            case 3:
+                result = findMin(bst);
+                if (result != INT_MIN) {
+                    printf("最小值：%d\n", result);
+                }
+                break;
+                
+            case 4:
+                result = findMax(bst);
+                if (result != INT_MAX) {
+                    printf("最大值：%d\n", result);
+                }
+                break;
+                
+            case 5:
+                printf("中序遍歷：");
+                if (bst->root == NULL) {
+                    printf("樹為空");
+                } else {
+                    inorderTraversal(bst->root);
+                }
+                printf("\n");
+                break;
+                
+            case 6:
+                printf("前序遍歷：");
+                if (bst->root == NULL) {
+                    printf("樹為空");
+                } else {
+                    preorderTraversal(bst->root);
+                }
+                printf("\n");
+                break;
+                
+            case 7:
+                printf("後序遍歷：");
+                if (bst->root == NULL) {
+                    printf("樹為空");
+                } else {
+                    postorderTraversal(bst->root);
+                }
+                printf("\n");
+                break;
+                
+            case 8:
+                printf("層序遍歷：");
+                if (bst->root == NULL) {
+                    printf("樹為空");
+                } else {
+                    levelOrderTraversal(bst->root);
+                }
+                printf("\n");
+                break;
+                
+            case 9:
+                result = calculateHeight(bst->root);
+                printf("樹的高度：%d\n", result);
+                break;
+                
+            case 10:
+                if (isValidBST(bst->root)) {
+                    printf("此樹是有效的二元搜尋樹\n");
+                } else {
+                    printf("此樹不是有效的二元搜尋樹\n");
+                }
+                break;
+                
+            case 11:
+                printf("樹的結構：\n");
+                if (bst->root == NULL) {
+                    printf("樹為空\n");
+                } else {
+                    displayTree(bst->root, 0);
+                }
+                break;
+                
+            case 12:
+                clearTree(bst);
+                break;
+                
+            case 0:
+                printf("感謝使用！程式結束。\n");
+                return;
+                
+            default:
+                printf("無效選項，請重新選擇\n");
+                break;
+        }
+        
+        printf("\n按Enter繼續...");
+        getchar();
+    }
+}
+
+// ==================== 主函數 ====================
+
+int main(void) {
+    printf("歡迎使用二元搜尋樹系統！\n");
+    
+    BST* bst = createBST();
+    if (bst == NULL) {
+        printf("無法創建二元搜尋樹\n");
+        return 1;
+    }
+    
+    handleUserInput(bst);
+    
+    // 清理記憶體
+    clearTree(bst);
+    free(bst);
+    
+    return 0;
+} 
