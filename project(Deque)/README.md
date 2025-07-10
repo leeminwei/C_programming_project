@@ -5,7 +5,7 @@
 # Sliding Window Maximum (C 語言實作)
 
 本專案實作了 LeetCode 經典問題 [239. Sliding Window Maximum](https://leetcode.com/problems/sliding-window-maximum/)，並使用 C 語言自行構建了 **雙端佇列（Deque）資料結構**，以達成線性時間解法。
-
+```
 ---
 
 ## 🧠 專案特色
@@ -19,7 +19,7 @@
 ---
 
 ## 📁 專案結構
-
+```
 .
 ├── Assignment.md       # 作業說明文件
 ├── deque.h             # Deque 資料結構與操作定義
